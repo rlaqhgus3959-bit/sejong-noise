@@ -1,0 +1,148 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>집시법 소음 기준 초과 계산기</title>
+    
+    <!-- 여기부터 PWA 추가 부분 -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#4CAF50">
+    <!-- PWA 추가 끝 -->
+
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; }
+        h1 { text-align: center; color: #2c3e50; font-size: 24px; margin-bottom: 30px; }
+        .container { max-width: 720px; margin: 20px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); box-sizing: border-box; }
+        .input-group { display: flex; align-items: center; margin-bottom: 15px; }
+        .input-group .icon { font-size: 20px; width: 40px; text-align: center; }
+        .input-group label { flex: 1; font-weight: bold; margin: 0; }
+        select, input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 8px; margin: 30px 0; cursor: pointer; }
+        #result { width: 100%; min-height: 400px; padding: 20px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px; font-family: monospace; white-space: pre-wrap; word-break: break-word; overflow-y: auto; line-height: 1.8; font-size: 16px; font-weight: bold; text-align: left; box-sizing: border-box; }
+        .footer { text-align: center; margin-top: 30px; font-size: 18px; font-weight: bold; color: #1a3a6e; }
+        .footer .police-icon { font-size: 24px; margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>집시법 소음 기준 초과 계산기</h1>
+        
+        <div class="input-group"><div class="icon">🏘️</div><label>대상 지역:</label></div>
+        <select id="region">
+            <option value="주거지역, 학교, 종합병원">주거지역, 학교, 종합병원</option>
+            <option value="공공도서관">공공도서관</option>
+            <option value="그 밖의 지역">그 밖의 지역</option>
+        </select>
+
+        <div class="input-group"><div class="icon">🕖</div><label>시간대:</label></div>
+        <select id="time">
+            <option value="주간">주간</option>
+            <option value="야간">야간</option>
+            <option value="심야">심야</option>
+        </select>
+
+        <div class="input-group"><div class="icon">🔇</div><label>배경 Leq (dB):</label></div>
+        <input type="number" id="bg_leq" step="0.1" placeholder="예: 48.5">
+
+        <div class="input-group"><div class="icon">📊</div><label>측정 Leq (dB):</label></div>
+        <input type="number" id="meas_leq" step="0.1" placeholder="예: 65.3">
+
+        <div class="input-group"><div class="icon">📈</div><label>측정 Lmax (dB):</label></div>
+        <input type="number" id="meas_lmax" step="0.1" placeholder="예: 78.0">
+
+        <button onclick="calculate()">계산하기</button>
+
+        <div id="result">계산 버튼을 누르면 결과가 여기에 표시됩니다.</div>
+        
+        <div class="footer">
+            <span class="police-icon">🚔</span> 세종북부경찰서 경비작전계
+        </div>
+    </div>
+
+    <script>
+    function getLimits(region, time) {
+        if (region === "주거지역, 학교, 종합병원") {
+            if (time === "주간") return [60.0, 80.0];
+            if (time === "야간") return [50.0, 70.0];
+            return [45.0, 65.0];
+        } else if (region === "공공도서관") {
+            return [55.0, 75.0];
+        } else {
+            if (time === "주간") return [70.0, 90.0];
+            if (time === "야간") return [60.0, 85.0];
+            return [60.0, 80.0];
+        }
+    }
+
+    function applyCorrection(measLeq, bgLeq) {
+        let delta = measLeq - bgLeq;
+        if (delta < 3.0) {
+            return [0.0, `Δ ${delta.toFixed(1)} dB < 3.0 → 대상 Leq = 0 dB (집회 소음 없음)`];
+        } else if (delta >= 10.0) {
+            return [measLeq, `Δ ${delta.toFixed(1)} dB ≥ 10.0 → 보정 없음 (대상 Leq = 측정 Leq)`];
+        } else {
+            let linearMeas = Math.pow(10, measLeq / 10);
+            let linearBg = Math.pow(10, bgLeq / 10);
+            let linearTarget = linearMeas - linearBg;
+            let targetLeq = linearTarget <= 0 ? 0.0 : Math.round(10 * Math.log10(linearTarget) * 10) / 10;
+            let correction = Math.round((measLeq - targetLeq) * 10) / 10;
+            return [targetLeq, `Δ ${delta.toFixed(1)} dB → 보정치 -${correction.toFixed(1)} dB (업로드 표 적용)`];
+        }
+    }
+
+    function calculate() {
+        try {
+            let bgLeq = parseFloat(document.getElementById("bg_leq").value) || 0;
+            let measLeq = parseFloat(document.getElementById("meas_leq").value) || 0;
+            let measLmax = parseFloat(document.getElementById("meas_lmax").value) || 0;
+            let region = document.getElementById("region").value;
+            let time = document.getElementById("time").value;
+
+            let [defaultLeq, defaultLmax] = getLimits(region, time);
+            let [targetLeq, corrInfo] = applyCorrection(measLeq, bgLeq);
+
+            let newLeq = bgLeq > defaultLeq ? Math.ceil(bgLeq * 10) / 10 : defaultLeq;
+            let newLmax = newLeq + 20;
+            let applied = bgLeq > defaultLeq ? `배경 초과 → 상향 (Leq ${newLeq.toFixed(1)} dB, Lmax ${newLmax.toFixed(1)} dB)` : "기본 기준";
+
+            let leqDiff = targetLeq - newLeq;
+            let lmaxDiff = measLmax - newLmax;
+            let leqStatus = leqDiff > 0 ? `+${leqDiff.toFixed(1)} dB 초과` : `${leqDiff.toFixed(1)} dB 미달`;
+            let lmaxStatus = lmaxDiff > 0 ? `+${lmaxDiff.toFixed(1)} dB 초과` : `${lmaxDiff.toFixed(1)} dB 미달`;
+            let leqResult = leqDiff > 0 ? "⚠️ 위반" : "✅ 준수";
+            let lmaxResult = lmaxDiff > 0 ? "⚠️ 위반" : "✅ 준수";
+
+            let line = "-".repeat(45);
+            let resultText = `${line}\n       📋 최종 결과 (업로드 보정표 적용)\n${line}\n\n`;
+            resultText += `📍 지역: ${region} | 🕖 시간대: ${time}\n`;
+            resultText += `⚖️ 기본 기준: 등가 ${defaultLeq.toFixed(1)} dB | 최고 ${defaultLmax.toFixed(1)} dB\n\n`;
+            resultText += `🔈 배경 Leq: ${bgLeq.toFixed(1)} dB\n`;
+            resultText += `📊 측정 Leq: ${measLeq.toFixed(1)} dB\n`;
+            resultText += `   ${corrInfo}\n`;
+            resultText += `🎯 대상 Leq: ${targetLeq.toFixed(1)} dB\n`;
+            resultText += `✅ 적용 등가 기준: ${newLeq.toFixed(1)} dB → ${leqStatus} ${leqResult}\n\n`;
+            resultText += `📈 측정 Lmax: ${measLmax.toFixed(1)} dB\n`;
+            resultText += `🔊 적용 최고 기준: ${newLmax.toFixed(1)} dB → ${lmaxStatus} ${lmaxResult}\n\n`;
+            resultText += `ℹ️ ${applied}\n`;
+            resultText += `${line}`;
+
+            document.getElementById("result").innerText = resultText;
+        } catch (e) {
+            document.getElementById("result").innerText = "⚠️ 오류: 입력값 확인해주세요!";
+        }
+    }
+
+    // 여기부터 PWA 서비스 워커 등록 (추가된 부분)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Service Worker 등록 성공'))
+                .catch(err => console.log('Service Worker 등록 실패:', err));
+        });
+    }
+    // PWA 추가 끝
+    </script>
+</body>
+</html>
