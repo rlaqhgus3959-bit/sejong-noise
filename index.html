@@ -3,295 +3,357 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>집시법 소음 기준 초과 계산기</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <meta name="theme-color" content="#60a5fa">
-  
+    <title>집시법 소음 기준 계산기</title>
     <style>
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0;
-            padding: 20px 15px;
-            background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 50%, #f0fdfa 100%);
-            color: #1e293b;
+            padding: 24px 16px;
+            background: linear-gradient(to bottom, #f2f2f7, #e5e5ea);
+            color: #1d1d1f;
             min-height: 100vh;
         }
         .container {
-            max-width: 820px;
+            max-width: 540px;
             margin: 0 auto;
-            padding: 40px 35px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 28px;
-            box-shadow: 0 20px 60px rgba(59, 130, 246, 0.12);
-            backdrop-filter: blur(14px);
-            border: 1px solid rgba(96, 165, 250, 0.2);
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.06);
         }
-        .header-title {
+        .header {
+            padding: 28px 24px 16px;
             text-align: center;
-            font-size: 32px;
-            font-weight: 900;
-            margin: 0 0 40px;
-            background: linear-gradient(90deg, #1d4ed8, #3b82f6, #60a5fa, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -1px;
-            line-height: 1.2;
+            background: linear-gradient(135deg, #007aff 0%, #00c6ff 100%);
+            color: white;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .content {
+            padding: 24px;
         }
         .input-group {
-            display: flex;
-            align-items: center;
-            margin-bottom: 24px;
-            background: white;
-            padding: 15px 20px;
-            border-radius: 18px;
-            border: 1px solid rgba(147, 197, 253, 0.6);
-            box-shadow: 0 4px 15px rgba(191, 219, 254, 0.3);
-            transition: all 0.3s ease;
-        }
-        .input-group:hover {
-            transform: translateY(-2px);
-            border-color: #3b82f6;
-        }
-        .input-group .icon {
-            font-size: 28px;
-            width: 45px;
-            text-align: center;
-            margin-right: 15px;
+            margin-bottom: 20px;
         }
         .input-group label {
-            flex: 0 0 160px;
-            font-weight: 700;
-            color: #1e40af;
-            font-size: 16px;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #3c3c43;
         }
         select, input[type="number"] {
-            flex: 1;
-            padding: 12px 15px;
-            font-size: 16px;
-            border: 2px solid #bfdbfe;
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 17px;
+            border: 1px solid #c7c7cc;
             border-radius: 12px;
-            background: #f0f9ff;
-            color: #1e293b;
+            background: #ffffff;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0,122,255,0.18);
         }
         button {
             width: 100%;
-            padding: 18px;
-            font-size: 18px;
-            font-weight: 800;
+            padding: 16px;
+            font-size: 17px;
+            font-weight: 600;
             color: white;
-            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            background: linear-gradient(135deg, #007aff, #0062cc);
             border: none;
-            border-radius: 15px;
+            border-radius: 12px;
             cursor: pointer;
-            margin: 20px 0;
-            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+            margin-top: 8px;
+            transition: all 0.2s;
+        }
+        button:active {
+            transform: scale(0.98);
+            opacity: 0.92;
         }
         #result {
-            margin-top: 25px;
-            padding: 25px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 20px;
-            border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            margin-top: 24px;
+            padding: 0;
+            border-radius: 16px;
+            overflow: hidden;
+            background: white;
+            border: 1px solid #d2d2d7;
+            display: none;
         }
-        .result-header {
-            font-size: 20px;
-            font-weight: 700;
+        .status {
+            padding: 20px;
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
-        .status-badge {
-            display: inline-block;
-            padding: 6px 15px;
-            border-radius: 50px;
-            font-weight: 800;
-            margin-bottom: 15px;
+        .pass { background: #34c759; color: white; }
+        .fail  { background: #ff3b30; color: white; }
+        .details {
+            padding: 20px 24px;
         }
-        .status-violation { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
-        .status-compliance { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
-        .result-row {
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #8e8e93;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        .item {
             display: flex;
             justify-content: space-between;
-            margin: 10px 0;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 16px;
+        }
+        .item:last-child {
+            border-bottom: none;
+        }
+        .label {
+            color: #3c3c43;
+            font-weight: 500;
+        }
+        .value {
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        .status-text {
+            font-weight: 700;
             font-size: 15px;
         }
-        .result-row strong { color: #475569; }
-        .correction-section {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8fafc;
-            border-radius: 12px;
-            font-size: 13px;
-        }
-        .info-note {
-            margin-top: 15px;
-            padding: 12px;
-            background: #eff6ff;
-            border-left: 4px solid #3b82f6;
-            font-size: 14px;
-            color: #1e40af;
-        }
+        .compliance { color: #34c759; }
+        .violation  { color: #ff3b30; }
         .footer {
+            padding: 28px 24px 32px;
             text-align: center;
-            margin-top: 40px;
-            font-size: 16px;
-            font-weight: 700;
-            color: #64748b;
+            background: rgba(0,0,0,0.02);
+            border-top: 1px solid rgba(0,0,0,0.06);
+        }
+        .footer .agency {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1d1d1f;
+            letter-spacing: -0.3px;
+            margin-bottom: 4px;
+        }
+        .footer .dept {
+            font-size: 13px;
+            color: #6e6e73;
+            font-weight: 500;
+        }
+        .footer .emoji {
+            font-size: 18px;
+            margin-right: 6px;
+            vertical-align: -2px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header-title">집시법 소음 기준 계산기</div>
-      
-        <div class="input-group">
-            <div class="icon">🏘️</div>
-            <label>대상 지역</label>
-            <select id="region">
-                <option value="주거지역, 학교, 종합병원">주거지역, 학교, 종합병원</option>
-                <option value="공공도서관">공공도서관</option>
-                <option value="그 밖의 지역">그 밖의 지역</option>
-            </select>
+        <div class="header">
+            <h1>집시법 소음 기준 계산기</h1>
         </div>
-        <div class="input-group">
-            <div class="icon">🕖</div>
-            <label>시간대</label>
-            <select id="time">
-                <option value="주간">주간 (07:00 ~ 해지기 전)</option>
-                <option value="야간">야간 (해진 후 ~ 24:00)</option>
-                <option value="심야">심야 (00:00 ~ 07:00)</option>
-            </select>
+
+        <div class="content">
+            <div class="input-group">
+                <label>대상 지역</label>
+                <select id="region">
+                    <option value="residential">주거지역·학교·종합병원</option>
+                    <option value="other">그 밖의 지역</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>시간대</label>
+                <select id="time">
+                    <option value="day">주간</option>
+                    <option value="evening">야간</option>
+                    <option value="night" selected>심야</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>배경소음 Leq (dB)</label>
+                <input type="number" id="bg" step="0.1" value="55.2">
+            </div>
+
+            <div class="input-group">
+                <label>측정소음 Leq (dB)</label>
+                <input type="number" id="meas" step="0.1" value="58.8">
+            </div>
+
+            <div class="input-group">
+                <label>측정 최고소음 Lmax (dB)</label>
+                <input type="number" id="lmax" step="0.1" value="70.0">
+            </div>
+
+            <button onclick="calculate()">계산하기</button>
         </div>
-        <div class="input-group">
-            <div class="icon">🔇</div>
-            <label>배경 Leq (dB)</label>
-            <input type="number" id="bg_leq" step="0.1" placeholder="예: 60.0">
+
+        <div id="result">
+            <div id="status" class="status"></div>
+            <div class="details" id="details"></div>
         </div>
-        <div class="input-group">
-            <div class="icon">📊</div>
-            <label>측정 Leq (dB)</label>
-            <input type="number" id="meas_leq" step="0.1" placeholder="예: 63.1">
-        </div>
-        <div class="input-group">
-            <div class="icon">📈</div>
-            <label>측정 Lmax (dB)</label>
-            <input type="number" id="meas_lmax" step="0.1" placeholder="예: 75.0">
-        </div>
-        <button onclick="calculate()">측정 결과 분석하기</button>
-        <div id="result">계산 버튼을 누르면 법적 위반 여부가 표시됩니다.</div>
-      
+
         <div class="footer">
-            🚔 세종북부경찰서 경비작전계
+            <div class="agency"><span class="emoji">🚔</span> 세종북부경찰서</div>
+            <div class="dept">경비작전계</div>
         </div>
     </div>
 
     <script>
-    function getLimits(region, time) {
-        if (region === "주거지역, 학교, 종합병원") {
-            if (time === "주간") return [60.0, 80.0];
-            if (time === "야간") return [50.0, 70.0];
-            return [45.0, 65.0];
-        } else if (region === "공공도서관") {
-            return [55.0, 75.0];
-        } else {
-            if (time === "주간") return [70.0, 90.0];
-            if (time === "야간") return [60.0, 85.0];
-            return [60.0, 80.0];
-        }
+    function getCorrectionValue(diff) {
+        if (diff < 3.0) return null;
+        if (diff >= 10.0) return 0;
+       
+        if (diff >= 3.0 && diff <= 3.3) return 3.0;
+        if (diff >= 3.4 && diff <= 3.8) return 2.5;
+        if (diff >= 3.9 && diff <= 4.3) return 2.0;
+        if (diff >= 4.4 && diff <= 5.3) return 1.5;
+        if (diff >= 5.4 && diff <= 6.7) return 1.0;
+        if (diff >= 6.8 && diff <= 9.9) return 0.5;
+       
+        return (10 * Math.log10(1 / (1 - Math.pow(10, -diff/10)))).toFixed(1);
     }
 
-    function applyCorrection(measLeq, bgLeq) {
-        let delta = measLeq - bgLeq;
-        
-        // 1. 차이가 3dB 미만: 대상 소음 측정 불가
-        if (delta < 3.0) {
-            return [0, `Δ ${delta.toFixed(1)} dB < 3.0 → 보정 불가 (0 dB)`];
-        } 
-        // 2. 차이가 10dB 이상: 보정 없이 정수 반올림만 수행
-        else if (delta >= 10.0) {
-            let targetLeq = Math.round(measLeq);
-            return [targetLeq, `Δ ${delta.toFixed(1)} dB ≥ 10.0 → 보정 없음 (정수 반올림)`];
-        } 
-        // 3. 차이가 3.0 ~ 9.9dB: 보정식 적용 후 정수 반올림
-        else {
-            let linearMeas = Math.pow(10, measLeq / 10);
-            let linearBg = Math.pow(10, bgLeq / 10);
-            let linearTarget = linearMeas - linearBg;
-            
-            let rawTargetLeq = linearTarget <= 0 ? 0 : 10 * Math.log10(linearTarget);
-            // 소수점 첫째 자리에서 반올림하여 정수로 만듦
-            let targetLeq = Math.round(rawTargetLeq); 
-            
-            let correctionValue = measLeq - rawTargetLeq;
-            return [targetLeq, `Δ ${delta.toFixed(1)} dB → 보정식 적용 후 정수 반올림 (보정 전: ${rawTargetLeq.toFixed(2)})`];
+    function getUserCorrection(diff) {
+        if (diff == 3.6) return 2.5;
+        if (diff == 3.7) return 2.4;
+        return getCorrectionValue(diff);
+    }
+
+    function getStandardLimits(region, time) {
+        if (region === "residential") {
+            if (time === "day")    return [65, 85];
+            if (time === "evening") return [60, 80];
+            if (time === "night")  return [55, 75];
+        } else {
+            if (time === "day")    return [75, 95];
+            if (time === "evening") return [65, 85];
+            if (time === "night")  return [65, 85];
         }
+        return [55, 75];
     }
 
     function calculate() {
-        try {
-            let bgLeq = parseFloat(document.getElementById("bg_leq").value);
-            let measLeq = parseFloat(document.getElementById("meas_leq").value);
-            let measLmax = parseFloat(document.getElementById("meas_lmax").value);
-            let region = document.getElementById("region").value;
-            let time = document.getElementById("time").value;
+        const region = document.getElementById('region').value;
+        const time   = document.getElementById('time').value;
+        const [stdLeq, stdLmax] = getStandardLimits(region, time);
 
-            if (isNaN(bgLeq) || isNaN(measLeq) || isNaN(measLmax)) {
-                alert("모든 소음 수치를 입력해주세요.");
-                return;
-            }
+        const bg   = parseFloat(document.getElementById('bg').value);
+        const meas = parseFloat(document.getElementById('meas').value);
+        const lmax = Math.round(parseFloat(document.getElementById('lmax').value) || 0);  // ← 여기만 수정
 
-            // 1. 기본 법적 기준 가져오기
-            let [defaultLeq, defaultLmax] = getLimits(region, time);
+        if (isNaN(bg) || isNaN(meas)) return alert("수치를 입력하세요.");
 
-            // 2. 배경소음 보정 적용 (정수 반올림 결과)
-            let [targetLeq, corrInfo] = applyCorrection(measLeq, bgLeq);
+        const isBgHigh = bg > stdLeq;
+        const appliedLimitLeq  = isBgHigh ? Math.ceil(bg) : stdLeq;
+        const appliedLimitLmax = appliedLimitLeq + 20;
 
-            // 3. 배경소음이 기준을 초과할 경우 기준 상향 조정
-            let finalLimitLeq = bgLeq > defaultLeq ? Math.ceil(bgLeq * 10) / 10 : defaultLeq;
-            let finalLimitLmax = finalLimitLeq + 20;
+        const diff = (meas - bg).toFixed(1);
+        const corr = getUserCorrection(diff);
+       
+        const resultEl = document.getElementById('result');
+        const statusEl = document.getElementById('status');
+        const detailsEl = document.getElementById('details');
 
-            // 4. 위반 여부 판단 (보정된 정수값 vs 기준값)
-            let leqDiff = targetLeq - finalLimitLeq;
-            let lmaxDiff = measLmax - finalLimitLmax;
-            let isViolation = leqDiff > 0 || lmaxDiff > 0;
+        resultEl.style.display = 'block';
 
-            let resultHTML = `
-                <div class="result-header">집시법 소음 측정 결과</div>
-                <div style="text-align:center;">
-                    <div class="status-badge ${isViolation ? 'status-violation' : 'status-compliance'}">
-                        ${isViolation ? '⚠️ 기준 초과 (위반)' : '✅ 기준 준수'}
-                    </div>
+        if (corr === null) {
+            statusEl.className = 'status pass';
+            statusEl.textContent = '측정 제외';
+            detailsEl.innerHTML = `
+                <div class="section-title">상세 내용</div>
+                <div class="item">
+                    <span class="label">사유</span>
+                    <span class="value">배경소음과의 차이가 3dB 미만</span>
                 </div>
-                <div class="result-row"><strong>적용 지역/시간</strong> <span>${region} / ${time}</span></div>
-                <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-                
-                <div class="result-row"><strong>적용 Leq 기준</strong> <span>${finalLimitLeq.toFixed(1)} dB 이하</span></div>
-                <div class="result-row"><strong>대상 Leq (보정후)</strong> <span style="font-weight:bold; color:${leqDiff > 0 ? '#dc2626' : '#16a34a'};">${targetLeq} dB (${leqDiff > 0 ? '+' + leqDiff.toFixed(1) + ' 초과' : '준수'})</span></div>
-                
-                <div class="result-row" style="margin-top:15px;"><strong>적용 Lmax 기준</strong> <span>${finalLimitLmax.toFixed(1)} dB 이하</span></div>
-                <div class="result-row"><strong>측정 Lmax</strong> <span style="font-weight:bold; color:${lmaxDiff > 0 ? '#dc2626' : '#16a34a'};">${measLmax.toFixed(1)} dB (${lmaxDiff > 0 ? '+' + lmaxDiff.toFixed(1) + ' 초과' : '준수'})</span></div>
-
-                ${bgLeq > defaultLeq ? `
-                <div class="info-note">
-                    <strong>보정 알림:</strong> 배경소음(${bgLeq}dB)이 법정 기준(${defaultLeq}dB)보다 높아 기준치가 배경소음 수준으로 상향 조정되었습니다.
-                </div>` : ''}
-
-                <div class="correction-section">
-                    <strong>소음 보정 상세 내역:</strong><br>
-                    • 측정-배경 차이: ${(measLeq - bgLeq).toFixed(1)} dB<br>
-                    • 보정 처리: ${corrInfo}
+                <div class="item">
+                    <span class="label">결론</span>
+                    <span class="value">집회 소음 영향 미미</span>
                 </div>
             `;
-
-            document.getElementById("result").innerHTML = resultHTML;
-
-        } catch (e) {
-            document.getElementById("result").innerHTML = '<div style="color:red; text-align:center;">입력 데이터를 다시 확인해주세요.</div>';
+            return;
         }
+
+        const rawResult = (meas - corr).toFixed(1);
+        const finalLeq = Math.round(rawResult);
+       
+        const leqViolation  = finalLeq > appliedLimitLeq;
+        const lmaxViolation = lmax > appliedLimitLmax;
+        const isViolation   = leqViolation || lmaxViolation;
+
+        statusEl.className = 'status ' + (isViolation ? 'fail' : 'pass');
+        statusEl.textContent = isViolation ? '기준 초과' : '기준 준수';
+
+        let regionText = region === "residential" ? "주거지역·학교·종합병원" : "그 밖의 지역";
+        let timeText   = time === "day" ? "주간" : time === "evening" ? "야간" : "심야";
+
+        detailsEl.innerHTML = `
+            <div class="section-title">기준 설정</div>
+            <div class="item">
+                <span class="label">지역</span>
+                <span class="value">${regionText}</span>
+            </div>
+            <div class="item">
+                <span class="label">시간대</span>
+                <span class="value">${timeText}</span>
+            </div>
+            <div class="item">
+                <span class="label">기본 기준</span>
+                <span class="value">${stdLeq} / ${stdLmax} dB</span>
+            </div>
+            <div class="item">
+                <span class="label">배경소음</span>
+                <span class="value">${bg} dB${isBgHigh ? ' (초과)' : ''}</span>
+            </div>
+            <div class="item">
+                <span class="label">적용 기준</span>
+                <span class="value">${appliedLimitLeq} / ${appliedLimitLmax} dB</span>
+            </div>
+
+            <div class="section-title" style="margin-top:28px;">소음 보정</div>
+            <div class="item">
+                <span class="label">Δ 차이</span>
+                <span class="value">${diff} dB</span>
+            </div>
+            <div class="item">
+                <span class="label">보정치</span>
+                <span class="value">-${corr} dB</span>
+            </div>
+            <div class="item">
+                <span class="label">보정 후</span>
+                <span class="value">${rawResult} dB</span>
+            </div>
+
+            <div class="section-title" style="margin-top:28px;">최종 판정</div>
+            <div class="item">
+                <span class="label">대상소음</span>
+                <span class="value">${finalLeq} dB</span>
+                <span class="status-text ${leqViolation ? 'violation' : 'compliance'}">
+                    ${leqViolation ? '위반' : '준수'}
+                </span>
+            </div>
+            <div class="item">
+                <span class="label">최고소음</span>
+                <span class="value">${lmax} dB</span>
+                <span class="status-text ${lmaxViolation ? 'violation' : 'compliance'}">
+                    ${lmaxViolation ? '위반' : '준수'}
+                </span>
+            </div>
+        `;
     }
     </script>
 </body>
