@@ -171,6 +171,7 @@
                 <label>대상 지역</label>
                 <select id="region">
                     <option value="residential">주거지역·학교·종합병원</option>
+                    <option value="library">공공도서관</option>
                     <option value="other">그 밖의 지역</option>
                 </select>
             </div>
@@ -239,6 +240,9 @@
             if (time === "day")    return [65, 85];
             if (time === "evening") return [60, 80];
             if (time === "night")  return [55, 75];
+        } else if (region === "library") {
+            // 공공도서관은 시간대 구분 없이 동일 기준 적용
+            return [55, 75];
         } else {
             if (time === "day")    return [75, 95];
             if (time === "evening") return [65, 85];
@@ -254,7 +258,7 @@
 
         const bg   = parseFloat(document.getElementById('bg').value);
         const meas = parseFloat(document.getElementById('meas').value);
-        const lmax = Math.round(parseFloat(document.getElementById('lmax').value) || 0);  // ← 여기만 수정
+        const lmax = Math.round(parseFloat(document.getElementById('lmax').value) || 0);
 
         if (isNaN(bg) || isNaN(meas)) return alert("수치를 입력하세요.");
 
@@ -278,11 +282,11 @@
                 <div class="section-title">상세 내용</div>
                 <div class="item">
                     <span class="label">사유</span>
-                    <span class="value">배경소음과의 차이가 3dB 미만</span>
+                    <span class="value">배경소음과의 차이가 3dB 미만 (Δ = ${diff} dB)</span>
                 </div>
                 <div class="item">
                     <span class="label">결론</span>
-                    <span class="value">집회 소음 영향 미미</span>
+                    <span class="value">집회 소음 영향 미미 (보정 불가)</span>
                 </div>
             `;
             return;
@@ -291,6 +295,8 @@
         const rawResult = (meas - corr).toFixed(1);
         const finalLeq = Math.round(rawResult);
        
+        const leqDiff = (finalLeq - appliedLimitLeq).toFixed(1);
+        const lmaxDiff = (lmax - appliedLimitLmax).toFixed(1);
         const leqViolation  = finalLeq > appliedLimitLeq;
         const lmaxViolation = lmax > appliedLimitLmax;
         const isViolation   = leqViolation || lmaxViolation;
@@ -298,7 +304,7 @@
         statusEl.className = 'status ' + (isViolation ? 'fail' : 'pass');
         statusEl.textContent = isViolation ? '기준 초과' : '기준 준수';
 
-        let regionText = region === "residential" ? "주거지역·학교·종합병원" : "그 밖의 지역";
+        let regionText = region === "residential" ? "주거지역·학교·종합병원" : region === "library" ? "공공도서관" : "그 밖의 지역";
         let timeText   = time === "day" ? "주간" : time === "evening" ? "야간" : "심야";
 
         detailsEl.innerHTML = `
@@ -312,43 +318,51 @@
                 <span class="value">${timeText}</span>
             </div>
             <div class="item">
-                <span class="label">기본 기준</span>
+                <span class="label">기본 기준 (Leq / Lmax)</span>
                 <span class="value">${stdLeq} / ${stdLmax} dB</span>
             </div>
             <div class="item">
-                <span class="label">배경소음</span>
-                <span class="value">${bg} dB${isBgHigh ? ' (초과)' : ''}</span>
+                <span class="label">배경소음 Leq</span>
+                <span class="value">${bg} dB${isBgHigh ? ' (기준 초과로 상향 조정)' : ' (기준 이하)'}</span>
             </div>
             <div class="item">
-                <span class="label">적용 기준</span>
+                <span class="label">적용 기준 (Leq / Lmax)</span>
                 <span class="value">${appliedLimitLeq} / ${appliedLimitLmax} dB</span>
             </div>
 
             <div class="section-title" style="margin-top:28px;">소음 보정</div>
             <div class="item">
-                <span class="label">Δ 차이</span>
+                <span class="label">측정소음 Leq</span>
+                <span class="value">${meas} dB</span>
+            </div>
+            <div class="item">
+                <span class="label">Δ 차이 (측정 - 배경)</span>
                 <span class="value">${diff} dB</span>
             </div>
             <div class="item">
-                <span class="label">보정치</span>
+                <span class="label">보정치 (Δ 기반 테이블 적용)</span>
                 <span class="value">-${corr} dB</span>
             </div>
             <div class="item">
-                <span class="label">보정 후</span>
+                <span class="label">보정 후 Leq (측정 - 보정치)</span>
                 <span class="value">${rawResult} dB</span>
+            </div>
+            <div class="item">
+                <span class="label">최종 대상 Leq (반올림)</span>
+                <span class="value">${finalLeq} dB</span>
             </div>
 
             <div class="section-title" style="margin-top:28px;">최종 판정</div>
             <div class="item">
-                <span class="label">대상소음</span>
-                <span class="value">${finalLeq} dB</span>
+                <span class="label">대상소음 Leq</span>
+                <span class="value">${finalLeq} dB (${leqDiff > 0 ? '+' + leqDiff + ' dB 초과' : leqDiff + ' dB (준수 범위)'})</span>
                 <span class="status-text ${leqViolation ? 'violation' : 'compliance'}">
                     ${leqViolation ? '위반' : '준수'}
                 </span>
             </div>
             <div class="item">
-                <span class="label">최고소음</span>
-                <span class="value">${lmax} dB</span>
+                <span class="label">최고소음 Lmax</span>
+                <span class="value">${lmax} dB (${lmaxDiff > 0 ? '+' + lmaxDiff + ' dB 초과' : lmaxDiff + ' dB (준수 범위)'})</span>
                 <span class="status-text ${lmaxViolation ? 'violation' : 'compliance'}">
                     ${lmaxViolation ? '위반' : '준수'}
                 </span>
@@ -358,3 +372,4 @@
     </script>
 </body>
 </html>
+```'}">
