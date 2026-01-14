@@ -113,27 +113,28 @@
         }
         .status-violation { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
         .status-compliance { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
-        .result-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            border-radius: 15px;
-        }
-        .section-label {
-            font-size: 14px;
-            font-weight: 900;
-            color: #1e40af;
-            margin-bottom: 10px;
-            display: block;
-            border-left: 4px solid #3b82f6;
-            padding-left: 10px;
-        }
         .result-row {
             display: flex;
             justify-content: space-between;
-            margin: 8px 0;
+            margin: 10px 0;
             font-size: 15px;
         }
         .result-row strong { color: #475569; }
+        .correction-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+        .info-note {
+            margin-top: 15px;
+            padding: 12px;
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            font-size: 14px;
+            color: #1e40af;
+        }
         .footer {
             text-align: center;
             margin-top: 40px;
@@ -141,7 +142,6 @@
             font-weight: 700;
             color: #64748b;
         }
-        hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
     </style>
 </head>
 <body>
@@ -182,7 +182,7 @@
             <input type="number" id="meas_lmax" step="0.1" placeholder="예: 75.0">
         </div>
         <button onclick="calculate()">측정 결과 분석하기</button>
-        <div id="result">계산 버튼을 누르면 분석 결과가 표시됩니다.</div>
+        <div id="result">계산 버튼을 누르면 법적 위반 여부가 표시됩니다.</div>
       
         <div class="footer">
             🚔 세종북부경찰서 경비작전계
@@ -196,7 +196,6 @@
             if (time === "야간") return [50.0, 70.0];
             return [45.0, 65.0];
         } else if (region === "공공도서관") {
-            // 공공도서관은 시간대 구분 없이 동일 기준 적용
             return [55.0, 75.0];
         } else {
             if (time === "주간") return [70.0, 90.0];
@@ -207,18 +206,28 @@
 
     function applyCorrection(measLeq, bgLeq) {
         let delta = measLeq - bgLeq;
+        
+        // 1. 차이가 3dB 미만: 대상 소음 측정 불가
         if (delta < 3.0) {
             return [0, `Δ ${delta.toFixed(1)} dB < 3.0 → 보정 불가 (0 dB)`];
-        } else if (delta >= 10.0) {
+        } 
+        // 2. 차이가 10dB 이상: 보정 없이 정수 반올림만 수행
+        else if (delta >= 10.0) {
             let targetLeq = Math.round(measLeq);
             return [targetLeq, `Δ ${delta.toFixed(1)} dB ≥ 10.0 → 보정 없음 (정수 반올림)`];
-        } else {
+        } 
+        // 3. 차이가 3.0 ~ 9.9dB: 보정식 적용 후 정수 반올림
+        else {
             let linearMeas = Math.pow(10, measLeq / 10);
             let linearBg = Math.pow(10, bgLeq / 10);
             let linearTarget = linearMeas - linearBg;
+            
             let rawTargetLeq = linearTarget <= 0 ? 0 : 10 * Math.log10(linearTarget);
+            // 소수점 첫째 자리에서 반올림하여 정수로 만듦
             let targetLeq = Math.round(rawTargetLeq); 
-            return [targetLeq, `Δ ${delta.toFixed(1)} dB → 정수 반올림 적용`];
+            
+            let correctionValue = measLeq - rawTargetLeq;
+            return [targetLeq, `Δ ${delta.toFixed(1)} dB → 보정식 적용 후 정수 반올림 (보정 전: ${rawTargetLeq.toFixed(2)})`];
         }
     }
 
@@ -235,53 +244,53 @@
                 return;
             }
 
+            // 1. 기본 법적 기준 가져오기
             let [defaultLeq, defaultLmax] = getLimits(region, time);
+
+            // 2. 배경소음 보정 적용 (정수 반올림 결과)
             let [targetLeq, corrInfo] = applyCorrection(measLeq, bgLeq);
+
+            // 3. 배경소음이 기준을 초과할 경우 기준 상향 조정
             let finalLimitLeq = bgLeq > defaultLeq ? Math.ceil(bgLeq * 10) / 10 : defaultLeq;
             let finalLimitLmax = finalLimitLeq + 20;
 
+            // 4. 위반 여부 판단 (보정된 정수값 vs 기준값)
             let leqDiff = targetLeq - finalLimitLeq;
             let lmaxDiff = measLmax - finalLimitLmax;
             let isViolation = leqDiff > 0 || lmaxDiff > 0;
 
             let resultHTML = `
-                <div class="result-header">분석 결과 요약</div>
+                <div class="result-header">집시법 소음 측정 결과</div>
                 <div style="text-align:center;">
                     <div class="status-badge ${isViolation ? 'status-violation' : 'status-compliance'}">
                         ${isViolation ? '⚠️ 기준 초과 (위반)' : '✅ 기준 준수'}
                     </div>
                 </div>
+                <div class="result-row"><strong>적용 지역/시간</strong> <span>${region} / ${time}</span></div>
+                <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+                
+                <div class="result-row"><strong>적용 Leq 기준</strong> <span>${finalLimitLeq.toFixed(1)} dB 이하</span></div>
+                <div class="result-row"><strong>대상 Leq (보정후)</strong> <span style="font-weight:bold; color:${leqDiff > 0 ? '#dc2626' : '#16a34a'};">${targetLeq} dB (${leqDiff > 0 ? '+' + leqDiff.toFixed(1) + ' 초과' : '준수'})</span></div>
+                
+                <div class="result-row" style="margin-top:15px;"><strong>적용 Lmax 기준</strong> <span>${finalLimitLmax.toFixed(1)} dB 이하</span></div>
+                <div class="result-row"><strong>측정 Lmax</strong> <span style="font-weight:bold; color:${lmaxDiff > 0 ? '#dc2626' : '#16a34a'};">${measLmax.toFixed(1)} dB (${lmaxDiff > 0 ? '+' + lmaxDiff.toFixed(1) + ' 초과' : '준수'})</span></div>
 
-                <div class="result-section" style="background:#f1f5f9;">
-                    <span class="section-label">[기준] 법적 제한 소음도</span>
-                    <div class="result-row"><strong>지역/시간</strong> <span>${region} / ${time}</span></div>
-                    <div class="result-row"><strong>법정 기준 (Leq)</strong> <span>${defaultLeq.toFixed(1)} dB</span></div>
-                    <div class="result-row"><strong>법정 기준 (Lmax)</strong> <span>${defaultLmax.toFixed(1)} dB</span></div>
-                    ${bgLeq > defaultLeq ? `<div style="font-size:12px; color:#ef4444; margin-top:5px;">※ 배경소음이 높아 기준이 상향 조정되었습니다.</div>` : ''}
-                </div>
+                ${bgLeq > defaultLeq ? `
+                <div class="info-note">
+                    <strong>보정 알림:</strong> 배경소음(${bgLeq}dB)이 법정 기준(${defaultLeq}dB)보다 높아 기준치가 배경소음 수준으로 상향 조정되었습니다.
+                </div>` : ''}
 
-                <div class="result-section" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                    <span class="section-label">[보정] 측정 및 배경소음 보정</span>
-                    <div class="result-row"><strong>배경 소음 (Leq)</strong> <span>${bgLeq.toFixed(1)} dB</span></div>
-                    <div class="result-row"><strong>측정 소음 (Leq)</strong> <span>${measLeq.toFixed(1)} dB</span></div>
-                    <div class="result-row"><strong>보정 결과 (대상 Leq)</strong> <span style="font-weight:bold; color:#1e40af;">${targetLeq} dB</span></div>
-                    <div style="font-size:12px; color:#64748b; margin-top:5px;">• 내역: ${corrInfo}</div>
-                </div>
-
-                <div class="result-section" style="background:#eff6ff; border:1px solid #dbeafe;">
-                    <span class="section-label">[최종] 위반 여부 판정</span>
-                    <div class="result-row"><strong>적용 기준 Leq</strong> <span>${finalLimitLeq.toFixed(1)} dB 이하</span></div>
-                    <div class="result-row"><strong>최종 대상 Leq</strong> <span style="font-weight:bold; color:${leqDiff > 0 ? '#dc2626' : '#16a34a'};">${targetLeq} dB (${leqDiff > 0 ? leqDiff.toFixed(1) + ' dB 초과' : '준수'})</span></div>
-                    <hr>
-                    <div class="result-row"><strong>적용 기준 Lmax</strong> <span>${finalLimitLmax.toFixed(1)} dB 이하</span></div>
-                    <div class="result-row"><strong>최종 측정 Lmax</strong> <span style="font-weight:bold; color:${lmaxDiff > 0 ? '#dc2626' : '#16a34a'};">${measLmax.toFixed(1)} dB (${lmaxDiff > 0 ? lmaxDiff.toFixed(1) + ' dB 초과' : '준수'})</span></div>
+                <div class="correction-section">
+                    <strong>소음 보정 상세 내역:</strong><br>
+                    • 측정-배경 차이: ${(measLeq - bgLeq).toFixed(1)} dB<br>
+                    • 보정 처리: ${corrInfo}
                 </div>
             `;
 
             document.getElementById("result").innerHTML = resultHTML;
 
         } catch (e) {
-            document.getElementById("result").innerHTML = '<div style="color:red; text-align:center;">데이터를 확인해주세요.</div>';
+            document.getElementById("result").innerHTML = '<div style="color:red; text-align:center;">입력 데이터를 다시 확인해주세요.</div>';
         }
     }
     </script>
