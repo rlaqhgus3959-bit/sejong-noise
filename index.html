@@ -2,206 +2,92 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>집시법 소음 기준 계산기</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 24px 16px;
-            background: #f2f2f7; /* iOS 베이스 컬러 */
+            background: #f2f2f7;
             color: #1c1c1e;
             min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
         }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        .header {
-            padding: 20px 0 30px;
-            text-align: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-            color: #000000;
-        }
+        .container { max-width: 500px; margin: 0 auto; }
+        .header { padding: 10px 0 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 22px; font-weight: 700; color: #000; }
         
-        /* 입력 폼 카드 */
         .card {
-            background: #ffffff;
+            background: #fff;
             border-radius: 14px;
             overflow: hidden;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
         .input-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 16px;
-            border-bottom: 1px solid #e5e5ea;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; border-bottom: 1px solid #e5e5ea;
         }
-        .input-row:last-child {
-            border-bottom: none;
-        }
-        .input-row label {
-            font-size: 16px;
-            color: #000000;
-            flex-shrink: 0;
-            margin-right: 16px;
-            font-weight: 500;
-        }
+        .input-row:last-child { border-bottom: none; }
+        .input-row label { font-size: 15px; font-weight: 500; }
         .input-row select, .input-row input {
-            border: none;
-            text-align: right;
-            font-size: 16px;
-            color: #007aff;
-            background: transparent;
-            width: 60%;
-            outline: none;
-            font-family: inherit;
+            border: none; text-align: right; font-size: 16px;
+            color: #007aff; background: transparent; width: 50%; outline: none;
         }
 
+        .btn-group { display: flex; gap: 8px; margin-bottom: 24px; }
         button {
-            width: 100%;
-            padding: 16px;
-            font-size: 17px;
-            font-weight: 600;
-            color: white;
-            background: #007aff;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0,122,255,0.2);
+            flex: 2; padding: 16px; font-size: 17px; font-weight: 600;
+            color: white; background: #007aff; border: none; border-radius: 12px;
+            cursor: pointer; box-shadow: 0 4px 12px rgba(0,122,255,0.2);
         }
-        button:active {
-            background: #0062cc;
-            transform: scale(0.99);
-        }
+        .btn-clear { flex: 1; background: #8e8e93; font-size: 14px; }
+        button:active { opacity: 0.8; transform: scale(0.98); }
 
-        /* 기록 영역 스타일 */
         .history-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            margin-left: 4px;
-            color: #1c1c1e;
-            display: none; /* 내용 없을 때 숨김 */
+            font-size: 18px; font-weight: 700; margin: 20px 0 12px 4px;
+            display: flex; justify-content: space-between; align-items: center;
         }
         
-        /* 개별 결과 카드 (히스토리 아이템) */
         .result-card {
-            background: #ffffff;
-            border-radius: 18px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-            animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            border: 1px solid rgba(0,0,0,0.02);
+            background: #fff; border-radius: 18px; padding: 18px;
+            margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            animation: fadeIn 0.3s ease-out;
         }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* 결과 카드 헤더 (시간, 판정) */
         .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #f2f2f7;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f2f2f7;
         }
-        .timestamp {
-            font-size: 13px;
-            color: #8e8e93;
-            font-weight: 600;
-        }
-        .badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 700;
-        }
-        .badge-pass { background: #e8f5e9; color: #2e7d32; } /* 초록 */
-        .badge-fail { background: #ffebee; color: #c62828; } /* 빨강 */
-        .badge-none { background: #f5f5f7; color: #636366; } /* 회색 */
+        .timestamp { font-size: 12px; color: #8e8e93; }
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+        .badge-pass { background: #e8f5e9; color: #2e7d32; }
+        .badge-fail { background: #ffebee; color: #c62828; }
+        .badge-none { background: #f5f5f7; color: #636366; }
 
-        /* 결과 데이터 그리드 */
-        .data-grid {
-            display: grid;
-            gap: 12px;
-        }
-        .data-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 15px;
-        }
-        .row-label {
-            color: #8e8e93;
-            font-weight: 500;
-            font-size: 13px;
-            text-transform: uppercase;
-            margin-top: 10px;
-            margin-bottom: 4px;
-        }
-        .row-value {
-            font-weight: 600;
-            color: #1c1c1e;
-        }
-        .sub-val {
-            font-size: 13px;
-            color: #8e8e93;
-            font-weight: 400;
-            margin-left: 4px;
-        }
-        
-        .result-highlight {
-            font-weight: 700;
-            color: #000000;
-        }
+        .data-grid { display: grid; gap: 8px; }
+        .data-row { display: flex; justify-content: space-between; font-size: 14px; }
+        .row-label { color: #8e8e93; font-size: 11px; margin-top: 8px; font-weight: 600; }
+        .row-value { font-weight: 600; color: #1c1c1e; }
+        .sub-val { font-size: 12px; color: #8e8e93; font-weight: 400; }
+        .result-highlight { font-weight: 700; }
         .violation-text { color: #ff3b30; }
 
-        /* 푸터 스타일 수정 (아이콘 CSS로 복구) */
-        .footer {
-            margin-top: 40px;
-            padding: 20px;
-            text-align: center;
-        }
+        .footer { margin-top: 40px; padding: 20px; text-align: center; }
         .footer .agency {
-            display: flex; /* 아이콘과 텍스트 정렬 */
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: 600; color: #1c1c1e;
         }
-        /* 여기서 아이콘을 표시합니다 */
-        .footer .agency::before {
-            content: "🚔"; 
-            margin-right: 8px;
-            font-size: 22px;
-        }
-        .footer .dept {
-            font-size: 12px;
-            color: #8e8e93;
-        }
+        .footer .agency::before { content: "🚔"; margin-right: 8px; font-size: 20px; }
+        .footer .dept { font-size: 12px; color: #8e8e93; margin-top: 4px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>집시법 소음 기준 계산기</h1>
-        </div>
+        <div class="header"><h1>집시법 소음 기준 계산기</h1></div>
 
         <div class="card">
             <div class="input-row">
@@ -225,43 +111,53 @@
         <div class="card">
             <div class="input-row">
                 <label>배경소음 Leq</label>
-                <input type="number" id="bg" step="0.1" value="55.2" placeholder="dB">
+                <input type="number" id="bg" step="0.1" value="55.2">
             </div>
             <div class="input-row">
                 <label>측정소음 Leq</label>
-                <input type="number" id="meas" step="0.1" value="58.8" placeholder="dB">
+                <input type="number" id="meas" step="0.1" value="58.8">
             </div>
             <div class="input-row">
                 <label>최고소음 Lmax</label>
-                <input type="number" id="lmax" step="0.1" value="70.0" placeholder="dB">
+                <input type="number" id="lmax" step="0.1" value="70.0">
             </div>
         </div>
 
-        <button onclick="calculate()">계산하기</button>
+        <div class="btn-group">
+            <button onclick="calculate()">계산하기</button>
+            <button class="btn-clear" onclick="clearHistory()">기록 삭제</button>
+        </div>
 
         <div id="history-section">
-            <div class="history-title" id="history-title">측정 기록 (최신순)</div>
+            <div class="history-title" id="history-title" style="display:none;">측정 기록 (최신순)</div>
             <div id="history-list"></div>
         </div>
 
         <footer class="footer">
-            <div class="agency">세종북부경찰서</div> <div class="dept">경비작전계</div>
+            <div class="agency">세종북부경찰서</div>
+            <div class="dept">경비작전계</div>
         </footer>
     </div>
 
     <script>
-    // [계산 로직/데이터 유지]
+    // 페이지 로드 시 저장된 기록 불러오기
+    window.onload = function() {
+        const saved = localStorage.getItem('noiseHistory');
+        if (saved) {
+            document.getElementById('history-list').innerHTML = saved;
+            document.getElementById('history-title').style.display = 'flex';
+        }
+    }
+
     function getCorrectionValue(diff) {
         if (diff < 3.0) return null;
         if (diff >= 10.0) return 0;
-        
         if (diff >= 3.0 && diff <= 3.3) return 3.0;
         if (diff >= 3.4 && diff <= 3.8) return 2.5;
         if (diff >= 3.9 && diff <= 4.3) return 2.0;
         if (diff >= 4.4 && diff <= 5.3) return 1.5;
         if (diff >= 5.4 && diff <= 6.7) return 1.0;
         if (diff >= 6.8 && diff <= 9.9) return 0.5;
-        
         return (10 * Math.log10(1 / (1 - Math.pow(10, -diff/10)))).toFixed(1);
     }
 
@@ -273,127 +169,88 @@
 
     function getStandardLimits(region, time) {
         if (region === "residential" || region === "library") {
-            if (time === "day")     return [65, 85];
+            if (time === "day") return [65, 85];
             if (time === "evening") return [60, 80];
-            if (time === "night")   return [55, 75];
+            if (time === "night") return [55, 75];
         } else {
-            if (time === "day")     return [75, 95];
+            if (time === "day") return [75, 95];
             if (time === "evening") return [65, 85];
-            if (time === "night")   return [65, 85];
+            if (time === "night") return [65, 85];
         }
         return [55, 75];
     }
 
-    // 메인 계산 및 히스토리 추가 함수
     function calculate() {
         const region = document.getElementById('region').value;
-        const time   = document.getElementById('time').value;
+        const time = document.getElementById('time').value;
         const [stdLeq, stdLmax] = getStandardLimits(region, time);
-
-        const bg   = parseFloat(document.getElementById('bg').value);
+        const bg = parseFloat(document.getElementById('bg').value);
         const meas = parseFloat(document.getElementById('meas').value);
         const lmaxRaw = parseFloat(document.getElementById('lmax').value) || 0;
 
         if (isNaN(bg) || isNaN(meas)) return alert("수치를 입력하세요.");
 
         const isBgHigh = bg > stdLeq;
-        const appliedLimitLeq  = isBgHigh ? Math.ceil(bg) : stdLeq;
+        const appliedLimitLeq = isBgHigh ? Math.ceil(bg) : stdLeq;
         const appliedLimitLmax = appliedLimitLeq + 20;
-
         const diff = (meas - bg).toFixed(1);
         const corr = getUserCorrection(diff);
         
-        // 현재 시간 구하기
         const now = new Date();
-        const timeString = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const timeString = now.getMonth()+1 + "/" + now.getDate() + " " + now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
 
-        // 히스토리 카드 생성
-        const historyList = document.getElementById('history-list');
-        const historyTitle = document.getElementById('history-title');
-        const card = document.createElement('div');
-        card.className = 'result-card';
-
-        // 1. 측정 제외 (3dB 미만) 케이스
+        let cardHTML = '';
         if (corr === null) {
-            card.innerHTML = `
-                <div class="card-header">
-                    <span class="timestamp">${timeString}</span>
-                    <span class="badge badge-none">측정 제외</span>
-                </div>
-                <div class="data-grid">
-                    <div class="row-label">상세 사유</div>
-                    <div class="data-row">
-                        <span>소음 차이</span>
-                        <span class="row-value">${diff} dB</span>
-                    </div>
-                    <div class="data-row">
-                        <span>결과</span>
-                        <span class="row-value" style="color:#636366">배경소음 영향 (3dB 미만)</span>
-                    </div>
-                </div>
-            `;
-        } 
-        // 2. 정상 계산 케이스
-        else {
+            cardHTML = `
+                <div class="result-card">
+                    <div class="card-header"><span class="timestamp">${timeString}</span><span class="badge badge-none">제외</span></div>
+                    <div class="data-grid"><div class="data-row"><span>차이 ${diff}dB (3dB 미만)</span><span class="row-value">배경소음 영향 지배적</span></div></div>
+                </div>`;
+        } else {
             const rawResultLeq = (meas - corr).toFixed(1);
             const finalLeq = Math.round(rawResultLeq); 
             const finalLmax = Math.round(lmaxRaw);
-
-            const leqViolation  = finalLeq > appliedLimitLeq;
+            const leqViolation = finalLeq > appliedLimitLeq;
             const lmaxViolation = finalLmax > appliedLimitLmax;
-            const isViolation   = leqViolation || lmaxViolation;
+            const isViolation = leqViolation || lmaxViolation;
 
-            const badgeClass = isViolation ? 'badge-fail' : 'badge-pass';
-            const badgeText = isViolation ? '기준 초과' : '기준 준수';
+            cardHTML = `
+                <div class="result-card" id="latest-result">
+                    <div class="card-header">
+                        <span class="timestamp">${timeString}</span>
+                        <span class="badge ${isViolation ? 'badge-fail' : 'badge-pass'}">${isViolation ? '기준 초과' : '기준 준수'}</span>
+                    </div>
+                    <div class="row-label">1. 적용 기준 (Leq / Lmax)</div>
+                    <div class="data-row"><span class="row-value">${appliedLimitLeq} dB / ${appliedLimitLmax} dB</span></div>
+                    
+                    <div class="row-label">2. 보정값 (Leq - 보정치)</div>
+                    <div class="data-row"><span>${rawResultLeq} dB <span class="sub-val">(-${corr})</span></span></div>
 
-            // 요청하신 순서: 기준 -> 보정 -> 최종
-            card.innerHTML = `
-                <div class="card-header">
-                    <span class="timestamp">${timeString}</span>
-                    <span class="badge ${badgeClass}">${badgeText}</span>
-                </div>
-
-                <div class="row-label">1. 기준 소음</div>
-                <div class="data-row">
-                    <span>등가 (Leq)</span>
-                    <span class="row-value">${appliedLimitLeq} dB</span>
-                </div>
-                <div class="data-row" style="margin-bottom: 8px;">
-                    <span>최고 (Lmax)</span>
-                    <span class="row-value">${appliedLimitLmax} dB</span>
-                </div>
-
-                <div class="row-label" style="border-top:1px dashed #e5e5ea; padding-top:8px;">2. 보정 소음</div>
-                <div class="data-row">
-                    <span>등가 (Leq)</span>
-                    <span class="row-value">${rawResultLeq} dB <span class="sub-val">(-${corr})</span></span>
-                </div>
-                <div class="data-row" style="margin-bottom: 8px;">
-                    <span>최고 (Lmax)</span>
-                    <span class="row-value">${lmaxRaw} dB</span>
-                </div>
-
-                <div class="row-label" style="border-top:1px dashed #e5e5ea; padding-top:8px;">3. 최종 판정</div>
-                <div class="data-row">
-                    <span>등가 (Leq)</span>
-                    <span class="row-value result-highlight ${leqViolation ? 'violation-text' : ''}">
-                        ${finalLeq} dB
-                        ${leqViolation ? ' (위반)' : ''}
-                    </span>
-                </div>
-                <div class="data-row">
-                    <span>최고 (Lmax)</span>
-                    <span class="row-value result-highlight ${lmaxViolation ? 'violation-text' : ''}">
-                        ${finalLmax} dB
-                        ${lmaxViolation ? ' (위반)' : ''}
-                    </span>
-                </div>
-            `;
+                    <div class="row-label">3. 최종 판정 (반올림)</div>
+                    <div class="data-row"><span>등가(Leq)</span><span class="row-value ${leqViolation ? 'violation-text' : ''}">${finalLeq} dB ${leqViolation ? '위반' : ''}</span></div>
+                    <div class="data-row"><span>최고(Lmax)</span><span class="row-value ${lmaxViolation ? 'violation-text' : ''}">${finalLmax} dB ${lmaxViolation ? '위반' : ''}</span></div>
+                </div>`;
         }
 
-        // 리스트 최상단에 추가 (최신순)
-        historyList.prepend(card);
-        historyTitle.style.display = 'block'; // 타이틀 보이기
+        const historyList = document.getElementById('history-list');
+        historyList.insertAdjacentHTML('afterbegin', cardHTML);
+        document.getElementById('history-title').style.display = 'flex';
+        
+        // 로컬 저장소에 저장 (브라우저 꺼도 유지)
+        localStorage.setItem('noiseHistory', historyList.innerHTML);
+
+        // 계산 후 결과 위치로 자동 스크롤
+        setTimeout(() => {
+            document.getElementById('history-title').scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    }
+
+    function clearHistory() {
+        if(confirm("모든 측정 기록을 삭제하시겠습니까?")) {
+            localStorage.removeItem('noiseHistory');
+            document.getElementById('history-list').innerHTML = '';
+            document.getElementById('history-title').style.display = 'none';
+        }
     }
     </script>
 </body>
