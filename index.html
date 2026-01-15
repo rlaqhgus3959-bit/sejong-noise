@@ -6,166 +6,194 @@
     <title>집시법 소음 기준 계산기</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 24px 16px;
-            background: linear-gradient(to bottom, #f2f2f7, #e5e5ea);
-            color: #1d1d1f;
+            background: #f2f2f7; /* iOS 베이스 컬러 */
+            color: #1c1c1e;
             min-height: 100vh;
         }
         .container {
-            max-width: 540px;
+            max-width: 500px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.92);
-            border-radius: 20px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-            overflow: hidden;
-            border: 1px solid rgba(0,0,0,0.06);
         }
         .header {
-            padding: 28px 24px 16px;
+            padding: 20px 0 30px;
             text-align: center;
-            background: linear-gradient(135deg, #007aff 0%, #00c6ff 100%);
-            color: white;
         }
         .header h1 {
             margin: 0;
             font-size: 24px;
             font-weight: 700;
-            letter-spacing: -0.5px;
+            color: #000000;
         }
-        .content {
-            padding: 24px;
-        }
-        .input-group {
-            margin-bottom: 20px;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            color: #3c3c43;
-        }
-        select, input[type="number"] {
-            width: 100%;
-            padding: 14px 16px;
-            font-size: 17px;
-            border: 1px solid #c7c7cc;
-            border-radius: 12px;
+        
+        /* 입력 폼 카드 */
+        .card {
             background: #ffffff;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-        select:focus, input:focus {
+        
+        .input-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e5e5ea;
+        }
+        .input-row:last-child {
+            border-bottom: none;
+        }
+        .input-row label {
+            font-size: 16px;
+            color: #000000;
+            flex-shrink: 0;
+            margin-right: 16px;
+            font-weight: 500;
+        }
+        .input-row select, .input-row input {
+            border: none;
+            text-align: right;
+            font-size: 16px;
+            color: #007aff;
+            background: transparent;
+            width: 60%;
             outline: none;
-            border-color: #007aff;
-            box-shadow: 0 0 0 3px rgba(0,122,255,0.18);
+            font-family: inherit;
         }
+
         button {
             width: 100%;
             padding: 16px;
             font-size: 17px;
             font-weight: 600;
             color: white;
-            background: linear-gradient(135deg, #007aff, #0062cc);
+            background: #007aff;
             border: none;
             border-radius: 12px;
             cursor: pointer;
-            margin-top: 8px;
-            transition: all 0.2s;
+            transition: background 0.2s;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,122,255,0.2);
         }
         button:active {
-            transform: scale(0.98);
-            opacity: 0.92;
+            background: #0062cc;
+            transform: scale(0.99);
         }
-        #result {
-            margin-top: 24px;
-            padding: 0;
-            border-radius: 16px;
-            overflow: hidden;
-            background: white;
-            border: 1px solid #d2d2d7;
-            display: none;
-        }
-        .status {
-            padding: 20px;
-            text-align: center;
-            font-size: 22px;
+
+        /* 기록 영역 스타일 */
+        .history-title {
+            font-size: 20px;
             font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-        .pass { background: #34c759; color: white; }
-        .fail  { background: #ff3b30; color: white; }
-        .details {
-            padding: 20px 24px;
-        }
-        .section-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: #8e8e93;
             margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
+            margin-left: 4px;
+            color: #1c1c1e;
+            display: none; /* 내용 없을 때 숨김 */
         }
-        .item {
+        
+        /* 개별 결과 카드 (히스토리 아이템) */
+        .result-card {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 결과 카드 헤더 (시간, 판정) */
+        .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 16px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f2f2f7;
         }
-        .item:last-child {
-            border-bottom: none;
-        }
-        .label {
-            color: #3c3c43;
-            font-weight: 500;
-        }
-        .value {
+        .timestamp {
+            font-size: 13px;
+            color: #8e8e93;
             font-weight: 600;
-            color: #1d1d1f;
         }
-        .status-text {
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
             font-weight: 700;
+        }
+        .badge-pass { background: #e8f5e9; color: #2e7d32; } /* 초록 */
+        .badge-fail { background: #ffebee; color: #c62828; } /* 빨강 */
+        .badge-none { background: #f5f5f7; color: #636366; } /* 회색 */
+
+        /* 결과 데이터 그리드 */
+        .data-grid {
+            display: grid;
+            gap: 12px;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             font-size: 15px;
         }
-        .compliance { color: #34c759; }
-        .violation  { color: #ff3b30; }
+        .row-label {
+            color: #8e8e93;
+            font-weight: 500;
+            font-size: 13px;
+            text-transform: uppercase;
+            margin-top: 10px;
+            margin-bottom: 4px;
+        }
+        .row-value {
+            font-weight: 600;
+            color: #1c1c1e;
+        }
+        .sub-val {
+            font-size: 13px;
+            color: #8e8e93;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+        
+        .result-highlight {
+            font-weight: 700;
+            color: #000000;
+        }
+        .violation-text { color: #ff3b30; }
 
-        /* 애플 스타일 푸터 수정 */
+        /* 푸터 스타일 수정 (아이콘 CSS로 복구) */
         .footer {
             margin-top: 40px;
-            padding: 32px 24px;
+            padding: 20px;
             text-align: center;
-            background: rgba(245, 245, 247, 0.6);
-            border-top: 1px solid rgba(0, 0, 0, 0.05);
-            backdrop-filter: saturate(180%) blur(20px);
         }
         .footer .agency {
-            display: inline-flex;
+            display: flex; /* 아이콘과 텍스트 정렬 */
             align-items: center;
             justify-content: center;
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 600;
-            color: #1d1d1f;
-            letter-spacing: -0.022em;
-            margin-bottom: 6px;
+            color: #1c1c1e;
+            margin-bottom: 4px;
         }
+        /* 여기서 아이콘을 표시합니다 */
         .footer .agency::before {
-            content: "🚔";
+            content: "🚔"; 
             margin-right: 8px;
-            font-size: 20px;
+            font-size: 22px;
         }
         .footer .dept {
-            font-size: 13px;
-            font-weight: 500;
-            color: #86868b;
-            letter-spacing: -0.01em;
-            text-transform: uppercase;
+            font-size: 12px;
+            color: #8e8e93;
         }
     </style>
 </head>
@@ -175,16 +203,16 @@
             <h1>집시법 소음 기준 계산기</h1>
         </div>
 
-        <div class="content">
-            <div class="input-group">
+        <div class="card">
+            <div class="input-row">
                 <label>대상 지역</label>
                 <select id="region">
                     <option value="residential">주거지역·학교·종합병원</option>
-                    <option value="library">공공도서관</option> <option value="other">그 밖의 지역</option>
+                    <option value="library">공공도서관</option>
+                    <option value="other">그 밖의 지역</option>
                 </select>
             </div>
-
-            <div class="input-group">
+            <div class="input-row">
                 <label>시간대</label>
                 <select id="time">
                     <option value="day">주간</option>
@@ -192,38 +220,37 @@
                     <option value="night" selected>심야</option>
                 </select>
             </div>
-
-            <div class="input-group">
-                <label>배경소음 Leq (dB)</label>
-                <input type="number" id="bg" step="0.1" value="55.2">
-            </div>
-
-            <div class="input-group">
-                <label>측정소음 Leq (dB)</label>
-                <input type="number" id="meas" step="0.1" value="58.8">
-            </div>
-
-            <div class="input-group">
-                <label>측정 최고소음 Lmax (dB)</label>
-                <input type="number" id="lmax" step="0.1" value="70.0">
-            </div>
-
-            <button onclick="calculate()">계산하기</button>
         </div>
 
-        <div id="result">
-            <div id="status" class="status"></div>
-            <div class="details" id="details"></div>
+        <div class="card">
+            <div class="input-row">
+                <label>배경소음 Leq</label>
+                <input type="number" id="bg" step="0.1" value="55.2" placeholder="dB">
+            </div>
+            <div class="input-row">
+                <label>측정소음 Leq</label>
+                <input type="number" id="meas" step="0.1" value="58.8" placeholder="dB">
+            </div>
+            <div class="input-row">
+                <label>최고소음 Lmax</label>
+                <input type="number" id="lmax" step="0.1" value="70.0" placeholder="dB">
+            </div>
+        </div>
+
+        <button onclick="calculate()">계산하기</button>
+
+        <div id="history-section">
+            <div class="history-title" id="history-title">측정 기록 (최신순)</div>
+            <div id="history-list"></div>
         </div>
 
         <footer class="footer">
-            <div class="agency">세종북부경찰서</div>
-            <div class="dept">경비작전계</div>
+            <div class="agency">세종북부경찰서</div> <div class="dept">경비작전계</div>
         </footer>
     </div>
 
     <script>
-    // [유지] 보정치 테이블 로직
+    // [계산 로직/데이터 유지]
     function getCorrectionValue(diff) {
         if (diff < 3.0) return null;
         if (diff >= 10.0) return 0;
@@ -238,16 +265,13 @@
         return (10 * Math.log10(1 / (1 - Math.pow(10, -diff/10)))).toFixed(1);
     }
 
-    // [유지] 사용자 커스텀 보정 로직
     function getUserCorrection(diff) {
         if (diff == 3.6) return 2.5;
         if (diff == 3.7) return 2.4;
         return getCorrectionValue(diff);
     }
 
-    // [유지] 기준 한계값 로직
     function getStandardLimits(region, time) {
-        // 공공도서관(library)은 별도 항목이지만, 기준 수치는 residential(주거지역)과 동일하게 적용
         if (region === "residential" || region === "library") {
             if (time === "day")     return [65, 85];
             if (time === "evening") return [60, 80];
@@ -260,7 +284,7 @@
         return [55, 75];
     }
 
-    // [유지] 메인 계산 함수
+    // 메인 계산 및 히스토리 추가 함수
     function calculate() {
         const region = document.getElementById('region').value;
         const time   = document.getElementById('time').value;
@@ -279,63 +303,97 @@
         const diff = (meas - bg).toFixed(1);
         const corr = getUserCorrection(diff);
         
-        const resultEl = document.getElementById('result');
-        const statusEl = document.getElementById('status');
-        const detailsEl = document.getElementById('details');
+        // 현재 시간 구하기
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-        resultEl.style.display = 'block';
+        // 히스토리 카드 생성
+        const historyList = document.getElementById('history-list');
+        const historyTitle = document.getElementById('history-title');
+        const card = document.createElement('div');
+        card.className = 'result-card';
 
+        // 1. 측정 제외 (3dB 미만) 케이스
         if (corr === null) {
-            statusEl.className = 'status pass';
-            statusEl.textContent = '측정 제외';
-            detailsEl.innerHTML = `
-                <div class="section-title">상세 내용</div>
-                <div class="item"><span class="label">사유</span><span class="value">차이 3dB 미만</span></div>
-                <div class="item"><span class="label">결론</span><span class="value">배경소음 영향 지배적</span></div>
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="timestamp">${timeString}</span>
+                    <span class="badge badge-none">측정 제외</span>
+                </div>
+                <div class="data-grid">
+                    <div class="row-label">상세 사유</div>
+                    <div class="data-row">
+                        <span>소음 차이</span>
+                        <span class="row-value">${diff} dB</span>
+                    </div>
+                    <div class="data-row">
+                        <span>결과</span>
+                        <span class="row-value" style="color:#636366">배경소음 영향 (3dB 미만)</span>
+                    </div>
+                </div>
             `;
-            return;
+        } 
+        // 2. 정상 계산 케이스
+        else {
+            const rawResultLeq = (meas - corr).toFixed(1);
+            const finalLeq = Math.round(rawResultLeq); 
+            const finalLmax = Math.round(lmaxRaw);
+
+            const leqViolation  = finalLeq > appliedLimitLeq;
+            const lmaxViolation = finalLmax > appliedLimitLmax;
+            const isViolation   = leqViolation || lmaxViolation;
+
+            const badgeClass = isViolation ? 'badge-fail' : 'badge-pass';
+            const badgeText = isViolation ? '기준 초과' : '기준 준수';
+
+            // 요청하신 순서: 기준 -> 보정 -> 최종
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="timestamp">${timeString}</span>
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                </div>
+
+                <div class="row-label">1. 기준 소음</div>
+                <div class="data-row">
+                    <span>등가 (Leq)</span>
+                    <span class="row-value">${appliedLimitLeq} dB</span>
+                </div>
+                <div class="data-row" style="margin-bottom: 8px;">
+                    <span>최고 (Lmax)</span>
+                    <span class="row-value">${appliedLimitLmax} dB</span>
+                </div>
+
+                <div class="row-label" style="border-top:1px dashed #e5e5ea; padding-top:8px;">2. 보정 소음</div>
+                <div class="data-row">
+                    <span>등가 (Leq)</span>
+                    <span class="row-value">${rawResultLeq} dB <span class="sub-val">(-${corr})</span></span>
+                </div>
+                <div class="data-row" style="margin-bottom: 8px;">
+                    <span>최고 (Lmax)</span>
+                    <span class="row-value">${lmaxRaw} dB</span>
+                </div>
+
+                <div class="row-label" style="border-top:1px dashed #e5e5ea; padding-top:8px;">3. 최종 판정</div>
+                <div class="data-row">
+                    <span>등가 (Leq)</span>
+                    <span class="row-value result-highlight ${leqViolation ? 'violation-text' : ''}">
+                        ${finalLeq} dB
+                        ${leqViolation ? ' (위반)' : ''}
+                    </span>
+                </div>
+                <div class="data-row">
+                    <span>최고 (Lmax)</span>
+                    <span class="row-value result-highlight ${lmaxViolation ? 'violation-text' : ''}">
+                        ${finalLmax} dB
+                        ${lmaxViolation ? ' (위반)' : ''}
+                    </span>
+                </div>
+            `;
         }
 
-        const rawResultLeq = (meas - corr).toFixed(1);
-        const finalLeq = Math.round(rawResultLeq); 
-        const finalLmax = Math.round(lmaxRaw); // 최고소음 반올림 적용 유지
-
-        const leqViolation  = finalLeq > appliedLimitLeq;
-        const lmaxViolation = finalLmax > appliedLimitLmax;
-        const isViolation   = leqViolation || lmaxViolation;
-
-        statusEl.className = 'status ' + (isViolation ? 'fail' : 'pass');
-        statusEl.textContent = isViolation ? '기준 초과' : '기준 준수';
-
-        // 텍스트 출력 분기 처리
-        let regionText = "";
-        if (region === "residential") regionText = "주거지역·학교·종합병원";
-        else if (region === "library") regionText = "공공도서관";
-        else regionText = "그 밖의 지역";
-
-        let timeText = time === "day" ? "주간" : time === "evening" ? "야간" : "심야";
-
-        detailsEl.innerHTML = `
-            <div class="section-title">기준 설정</div>
-            <div class="item"><span class="label">지역 / 시간</span><span class="value">${regionText} / ${timeText}</span></div>
-            <div class="item"><span class="label">적용 기준</span><span class="value">${appliedLimitLeq} / ${appliedLimitLmax} dB</span></div>
-
-            <div class="section-title" style="margin-top:28px;">소음 보정</div>
-            <div class="item"><span class="label">보정 전 (Leq)</span><span class="value">${rawResultLeq} dB (-${corr})</span></div>
-            <div class="item"><span class="label">입력 최고 (Lmax)</span><span class="value">${lmaxRaw} dB</span></div>
-
-            <div class="section-title" style="margin-top:28px;">최종 판정 (반올림 적용)</div>
-            <div class="item">
-                <span class="label">대상소음 (Leq)</span>
-                <span class="value">${finalLeq} dB</span>
-                <span class="status-text ${leqViolation ? 'violation' : 'compliance'}">${leqViolation ? '위반' : '준수'}</span>
-            </div>
-            <div class="item">
-                <span class="label">최고소음 (Lmax)</span>
-                <span class="value">${finalLmax} dB</span>
-                <span class="status-text ${lmaxViolation ? 'violation' : 'compliance'}">${lmaxViolation ? '위반' : '준수'}</span>
-            </div>
-        `;
+        // 리스트 최상단에 추가 (최신순)
+        historyList.prepend(card);
+        historyTitle.style.display = 'block'; // 타이틀 보이기
     }
     </script>
 </body>
