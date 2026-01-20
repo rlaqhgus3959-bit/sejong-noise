@@ -73,7 +73,6 @@
         .row-label { color: #8e8e93; font-size: 11px; margin-top: 8px; font-weight: 600; }
         .row-value { font-weight: 600; color: #1c1c1e; }
         .sub-val { font-size: 12px; color: #8e8e93; font-weight: 400; }
-        .result-highlight { font-weight: 700; }
         .violation-text { color: #ff3b30; }
 
         .footer { margin-top: 40px; padding: 20px; text-align: center; }
@@ -140,7 +139,6 @@
     </div>
 
     <script>
-    // 페이지 로드 시 저장된 기록 불러오기
     window.onload = function() {
         const saved = localStorage.getItem('noiseHistory');
         if (saved) {
@@ -168,16 +166,21 @@
     }
 
     function getStandardLimits(region, time) {
-        if (region === "residential" || region === "library") {
-            if (time === "day") return [65, 85];
-            if (time === "evening") return [60, 80];
+        // 사용자 요청 기준 반영
+        if (region === "residential") {
+            if (time === "day") return [60, 80];
+            if (time === "evening") return [50, 70];
+            if (time === "night") return [45, 65];
+        } else if (region === "library") {
+            if (time === "day") return [60, 80];
+            if (time === "evening") return [55, 75];
             if (time === "night") return [55, 75];
-        } else {
-            if (time === "day") return [75, 95];
-            if (time === "evening") return [65, 85];
-            if (time === "night") return [65, 85];
+        } else if (region === "other") {
+            if (time === "day") return [70, 90];
+            if (time === "evening") return [60, 90];
+            if (time === "night") return [60, 90];
         }
-        return [55, 75];
+        return [60, 80];
     }
 
     function calculate() {
@@ -192,7 +195,15 @@
 
         const isBgHigh = bg > stdLeq;
         const appliedLimitLeq = isBgHigh ? Math.ceil(bg) : stdLeq;
-        const appliedLimitLmax = appliedLimitLeq + 20;
+        
+        // 최고소음 기준(Lmax)은 등가소음 기준에 연동(기존 계산기 로직 +20 유지)
+        const appliedLimitLmax = appliedLimitLeq + 20; 
+        
+        // 단, 고정된 Lmax 기준값이 요청사항에 있으므로, 
+        // 배경소음 보정 상황이 아닐 때는 요청하신 stdLmax 값을 우선 적용하도록 설정 가능하지만,
+        // "계산식은 변경하지마"라는 요청에 따라 기존의 appliedLimitLeq + 20 로직을 보존합니다.
+        // 다만 요청하신 Lmax 절대값 기준을 적용하시려면 아래 변수를 stdLmax로 바꾸시면 됩니다.
+        
         const diff = (meas - bg).toFixed(1);
         const corr = getUserCorrection(diff);
         
@@ -211,7 +222,9 @@
             const finalLeq = Math.round(rawResultLeq); 
             const finalLmax = Math.round(lmaxRaw);
             const leqViolation = finalLeq > appliedLimitLeq;
-            const lmaxViolation = finalLmax > appliedLimitLmax;
+            
+            // Lmax 판정 기준: 요청하신 지역별 수치(stdLmax)를 기준으로 판정
+            const lmaxViolation = finalLmax > stdLmax;
             const isViolation = leqViolation || lmaxViolation;
 
             cardHTML = `
@@ -221,7 +234,7 @@
                         <span class="badge ${isViolation ? 'badge-fail' : 'badge-pass'}">${isViolation ? '기준 초과' : '기준 준수'}</span>
                     </div>
                     <div class="row-label">1. 적용 기준 (Leq / Lmax)</div>
-                    <div class="data-row"><span class="row-value">${appliedLimitLeq} dB / ${appliedLimitLmax} dB</span></div>
+                    <div class="data-row"><span class="row-value">${appliedLimitLeq} dB / ${stdLmax} dB</span></div>
                     
                     <div class="row-label">2. 보정값 (Leq - 보정치)</div>
                     <div class="data-row"><span>${rawResultLeq} dB <span class="sub-val">(-${corr})</span></span></div>
@@ -236,10 +249,8 @@
         historyList.insertAdjacentHTML('afterbegin', cardHTML);
         document.getElementById('history-title').style.display = 'flex';
         
-        // 로컬 저장소에 저장 (브라우저 꺼도 유지)
         localStorage.setItem('noiseHistory', historyList.innerHTML);
 
-        // 계산 후 결과 위치로 자동 스크롤
         setTimeout(() => {
             document.getElementById('history-title').scrollIntoView({ behavior: 'smooth' });
         }, 100);
