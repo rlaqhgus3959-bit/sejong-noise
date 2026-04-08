@@ -36,7 +36,6 @@
         .footer .agency::before { content: "🚔"; margin-right: 8px; font-size: 20px; }
         .footer .dept { font-size: 12px; color: #8e8e93; margin-top: 4px; }
         
-        /* [추가된 스타일] 일출일몰 정보창 */
         .sun-info-box {
             background: #f2f2f7;
             margin: 12px 16px 6px 16px;
@@ -60,11 +59,11 @@
             <div class="sun-info-box">
                 <div class="sun-item">
                     <span>☀️ 일출</span>
-                    <span id="sunrise-time" class="sun-time">--:--</span>
+                    <span id="sunrise-time" class="sun-time">탐색중..</span>
                 </div>
                 <div class="sun-item">
                     <span>🌙 일몰</span>
-                    <span id="sunset-time" class="sun-time">--:--</span>
+                    <span id="sunset-time" class="sun-time">탐색중..</span>
                 </div>
             </div>
 
@@ -112,19 +111,41 @@
             document.getElementById('history-list').innerHTML = saved;
             document.getElementById('history-title').style.display = 'flex';
         }
-        // [추가] 일출일몰 가져오기 실행
-        getSejongSunTimes();
+        // 앱 실행 시 현위치 일출일몰 탐색 시작
+        getLocalSunTimes();
     }
 
-    // [추가] 세종시(조치원/북부 기준 위도36.6, 경도127.3) 일출일몰 API 호출
-    async function getSejongSunTimes() {
+    // GPS를 이용해 현위치 정보 가져오기
+    function getLocalSunTimes() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                // 1. 위치 동의 및 성공 (현위치 적용)
+                async function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    await fetchSunTimesAPI(lat, lon);
+                },
+                // 2. 위치 거부 또는 실패 (세종시 36.60, 127.30 적용)
+                async function(error) {
+                    await fetchSunTimesAPI(36.60, 127.30);
+                },
+                // 5초 이상 응답 없으면 실패로 간주하고 세종시 기준 적용
+                { timeout: 5000 } 
+            );
+        } else {
+            // 브라우저가 GPS를 지원하지 않는 경우 (세종시 적용)
+            fetchSunTimesAPI(36.60, 127.30);
+        }
+    }
+
+    // 좌표를 받아 날씨 API 호출 (캐시 방지 적용)
+    async function fetchSunTimesAPI(lat, lon) {
         try {
-            // [수정됨] Open-Meteo 무료 API 사용 (캐시 방지 옵션 추가)
-            const response = await fetch("https://api.open-meteo.com/v1/forecast?latitude=36.60&longitude=127.30&daily=sunrise,sunset&timezone=Asia%2FSeoul", { cache: "no-store" });
+            const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset&timezone=Asia%2FSeoul`;
+            const response = await fetch(apiUrl, { cache: "no-store" });
             const data = await response.json();
             
             if (data && data.daily) {
-                // "2023-10-25T06:45" 형식에서 시간만 추출
                 const sunriseRaw = data.daily.sunrise[0];
                 const sunsetRaw = data.daily.sunset[0];
                 
@@ -135,13 +156,11 @@
                 document.getElementById('sunset-time').innerText = sunset;
             }
         } catch (error) {
-            console.error("일출일몰 정보를 가져오는데 실패했습니다.", error);
             document.getElementById('sunrise-time').innerText = "확인불가";
             document.getElementById('sunset-time').innerText = "확인불가";
         }
     }
 
-    // [중요] 사용자 제공 조견표 데이터 매핑 (절대 수정 금지)
     const correctionTable = {
         "3.0": 3.0, "3.1": 2.9, "3.2": 2.8, "3.3": 2.7, "3.4": 2.7, "3.5": 2.6, "3.6": 2.5, "3.7": 2.4, "3.8": 2.3, "3.9": 2.3,
         "4.0": 2.2, "4.1": 2.1, "4.2": 2.1, "4.3": 2.0, "4.4": 2.0, "4.5": 1.9, "4.6": 1.8, "4.7": 1.8, "4.8": 1.7, "4.9": 1.7,
@@ -155,12 +174,10 @@
     function getCorrectionValue(diff) {
         if (diff < 3.0) return null;
         if (diff >= 10.0) return 0;
-        // 문자열 키로 변환하여 테이블에서 값 조회
         const key = diff.toFixed(1);
         return correctionTable[key] !== undefined ? correctionTable[key] : 0;
     }
 
-    // 요청하신 소음 기준 적용
     function getStandardLimits(region, time) {
         if (region === "residential") {
             if (time === "day") return [60, 80];
@@ -170,7 +187,7 @@
             if (time === "day") return [60, 80];
             if (time === "evening") return [55, 75];
             if (time === "night") return [55, 75];
-        } else { // 그 밖의 지역
+        } else { 
             if (time === "day") return [70, 90];
             if (time === "evening") return [60, 90];
             if (time === "night") return [60, 90];
@@ -189,15 +206,11 @@
         if (isNaN(bg) || isNaN(meas)) return alert("수치를 입력하세요.");
 
         const diffRaw = meas - bg;
-        // 차이값 소수점 첫째자리까지 고정 (조견표 매칭용)
         const diff = parseFloat(diffRaw.toFixed(1));
         const corr = getCorrectionValue(diff);
         
-        // 배경소음이 기준을 초과하면 배경소음을 기준값으로 사용 (올림)
         const isBgHigh = bg > stdLeq;
         const appliedLimitLeq = isBgHigh ? Math.ceil(bg) : stdLeq;
-        
-        // Lmax 기준은 고정된 법적 기준 사용 (배경소음 연동 X - 요청사항 반영)
         const appliedLimitLmax = stdLmax;
 
         const now = new Date();
@@ -211,7 +224,6 @@
                     <div class="data-row"><span>차이 ${diff}dB (3dB 미만)</span><span class="row-value">배경소음 영향 지배적</span></div>
                 </div>`;
         } else {
-            // 계산식: 측정치 - 보정치 (사용자 표의 보정치는 뺄셈용 양수로 저장됨)
             const rawResultLeq = (meas - corr).toFixed(1);
             const finalLeq = Math.round(parseFloat(rawResultLeq)); 
             const finalLmax = Math.round(lmaxRaw);
@@ -255,10 +267,10 @@
         }
     }
 
-    // [추가됨] 화면이 다시 보일 때마다 일출일몰 정보 자동 갱신
+    // 스마트폰에서 화면을 껐다 켜거나 다른 앱을 보다 돌아올 때 자동 갱신
     document.addEventListener("visibilitychange", function() {
         if (document.visibilityState === 'visible') {
-            getSejongSunTimes();
+            getLocalSunTimes();
         }
     });
     </script>
